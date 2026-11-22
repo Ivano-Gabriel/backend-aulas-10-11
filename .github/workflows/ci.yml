@@ -30,7 +30,9 @@ jobs:
       - name: Configurar credencial temporária de CI
         run: |
           echo "DB_USER=ci_aluno" >> "$GITHUB_ENV"
-          echo "DB_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          SENHA_CI="$(openssl rand -hex 24)"
+          echo "::add-mask::$SENHA_CI"
+          echo "DB_PASSWORD=$SENHA_CI" >> "$GITHUB_ENV"
 
       - name: Executar PostgreSQL para JAR fora da IDE
         run: |

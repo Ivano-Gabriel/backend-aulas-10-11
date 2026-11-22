@@ -16,7 +16,7 @@ A implementação estudada é a **API de Tarefas**, uma API REST em Java 21 e Sp
 
 **Questão central:** o que falta a uma API Spring Boot para se tornar confiável, testável e executável em outros ambientes? É preciso separar responsabilidades, automatizar verificações, empacotar o programa, manter segredos fora do código, executar com dependências reproduzíveis e observar sua saúde operacional. Ainda são necessárias práticas de segurança, evidências reais de teste e documentação de execução.
 
-> **Distinção metodológica:** as respostas conceituais das seções 2 e 4 baseiam-se nas referências técnicas citadas. As seções de implementação descrevem os arquivos que foram preparados. A execução de testes, do JAR, dos containers e do Actuator **ainda não foi comprovada nesta sessão** e permanece como etapa obrigatória de homologação, descrita na seção 9.
+> **Distinção metodológica:** as respostas conceituais das seções 2 e 4 baseiam-se nas referências técnicas citadas. As seções de implementação descrevem os arquivos preparados. Em 22/11/2026, o **GitHub Actions comprovou** os testes automatizados, o JAR, os containers, a persistência e o Actuator (seção 9). A execução local do aluno ainda está pendente.
 
 ## 2. Parte I — Pesquisa sobre testes automatizados (12 questões)
 
@@ -290,7 +290,7 @@ A API fictícia falha em outras máquinas porque depende de configurações loca
 
 ## 7. Conclusão
 
-Testar e empacotar uma API significa deixar de depender exclusivamente de observações manuais ou das configurações do computador do programador. A API de tarefas apresenta arquitetura em camadas, CRUD persistente, testes isolados com Mockito, casos HTTP com MockMvc, JAR, Dockerfile, Compose com banco e volume, logs sem dados sensíveis e Actuator com exposição restrita. Esses recursos tornam a aplicação mais verificável e portátil, mas a confiabilidade efetiva só poderá ser afirmada após a execução real e revisão dos resultados.
+Testar e empacotar uma API significa deixar de depender exclusivamente de observações manuais ou das configurações do computador do programador. A API de tarefas apresenta arquitetura em camadas, CRUD persistente, testes isolados com Mockito, casos HTTP com MockMvc, JAR, Dockerfile, Compose com banco e volume, logs sem dados sensíveis e Actuator com exposição restrita. Esses recursos tornam a aplicação mais verificável e portátil. A execução automatizada do GitHub Actions confirmou os resultados iniciais; isso não substitui homologação manual e entendimento pelo aluno.
 
 ## 8. Referências consultadas
 
@@ -309,18 +309,23 @@ Testar e empacotar uma API significa deixar de depender exclusivamente de observ
 
 ## 9. Repositório e evidências de execução
 
-**Endereço:** https://github.com/Ivano-Gabriel/backend-aulas-10-11 — repositório criado, publicação dos arquivos feita em 22/11/2026; execução dos testes e da API ainda depende de homologação.
+**Repositório individual:** https://github.com/Ivano-Gabriel/backend-aulas-10-11
 
-**Situação de verificação em 22/11/2026:**
+**Execução real no GitHub Actions em 22/11/2026:** https://github.com/Ivano-Gabriel/backend-aulas-10-11/actions/runs/45077886157
 
-| Comprovação exigida | Situação nesta versão | Onde executar/registrar |
+**Evidências compactadas disponíveis:** https://github.com/Ivano-Gabriel/backend-aulas-10-11/actions/runs/45077886157/artifacts/14775643850
+
+O pipeline finalizou com **sucesso**: Maven BUILD SUCCESS; **12 testes executados, 0 falhas, 0 erros e 0 ignorados** (8 testes do Service usando JUnit/Mockito e 4 do Controller com MockMvc); PostgreSQL inicializado; execução do JAR fora da IDE; `GET /actuator/health` com status `UP`; criação e busca de tarefa por HTTP; construção e execução da API via Docker Compose e recuperação, na API containerizada, de um registro criado anteriormente pelo JAR usando o mesmo banco e volume.
+
+| Exigência | Evidência real em CI | Limite da comprovação |
 |---|---|---|
-| Código com CRUD e PostgreSQL | Arquivos preparados, execução ainda não verificada | `src/main`, README |
-| JUnit/Mockito + dois sucessos/dois erros | 8 testes de Service escritos, não executados | `src/test`, `mvn clean package` |
-| Controller/MockMvc | 4 testes HTTP escritos, não executados | `TarefaControllerTest` |
-| JAR fora da IDE | Comando documentado, não executado | `java -jar target/...jar` |
-| Dockerfile + Compose + volume | Arquivos preparados, containers não executados | `Dockerfile`, `compose.yaml` |
-| Logs | Código configurado, logs de execução ainda não capturados | `docker compose logs api` |
-| `GET /actuator/health` | Endpoint configurado, resposta não observada ainda | `curl http://localhost:8080/actuator/health` |
+| Testes de Service e Controller | 12/12 aprovados; `target/surefire-reports` e `evidencias/maven-ci.txt` | Testes validam cenários escritos, não todas as possibilidades |
+| Maven e JAR | `BUILD SUCCESS`, artefato JAR gerado e executado | Em runner Linux, não no computador do aluno |
+| Credenciais externas | Variáveis DB_USER/DB_PASSWORD temporárias em CI | Senha temporária, sem vínculo com produção |
+| Docker Compose e PostgreSQL | Serviços `db` e `api` iniciados, verificados por `docker compose ps` | Não é deploy permanente |
+| Persistência | Tarefa criada via JAR e encontrada depois pela API containerizada | Confirma persistência durante troca de processos; não comprova restauração de backups |
+| Logs e Actuator | Logs capturados, health com `UP` | Health não equivale a teste de todas as regras |
 
-**Evidências reais para completar a entrega:** capturas das execuções de Maven, JAR, `docker compose ps`, logs, health e teste de persistência. Cada captura deve conter uma legenda, como as indicadas no arquivo `evidencias/INSTRUCOES.md`. Uma execução automatizada adicional foi especificada em `.github/workflows/ci.yml`, mas seu resultado só contará como evidência depois de a pipeline efetivamente rodar e concluir.
+**Correção após o primeiro pipeline:** a senha aleatória de CI aparecia no bloco de ambiente dos logs do runner, embora não fosse credencial real ou de produção. O workflow foi ajustado para mascará-la com `::add-mask::`. A execução original permanece no histórico como evidência; o mascaramento deve ser confirmado na execução seguinte.
+
+**Pendente para completar a entrega:** executar a API na máquina do aluno, salvar capturas reais com legendas de Maven, JAR, Compose, health e operações HTTP; revisar o texto e explicar os trechos com palavras próprias. Não produzir capturas nem logs fictícios.

@@ -1,6 +1,6 @@
 # Evidências de execução — preencher somente após testar
 
-**Estado em 22/11/2026:** implementação preparada, mas **testes, JAR, Docker e Actuator ainda não foram executados neste ambiente**. Não usar este arquivo como prova de que as verificações passaram.
+**Estado em 22/11/2026:** **CI no GitHub Actions aprovado (12/12 testes, JAR, Compose e Actuator)**. Evidências reais em `RESULTADOS_CI.md`. Execução no computador do aluno e capturas de tela locais ainda pendentes.
 
 ## Checklist para a entrega
 

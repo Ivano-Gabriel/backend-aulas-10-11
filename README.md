@@ -154,7 +154,8 @@ Os logs de negócio registram apenas o ID da tarefa criada/atualizada/excluída/
 
 - Abra [`evidencias/INSTRUCOES.md`](evidencias/INSTRUCOES.md) e execute o checklist na sua máquina.
 - A automação `.github/workflows/ci.yml` está preparada para executar testes, gerar JAR, iniciar a API sem IDE, subir containers e verificar HTTP/Actuator depois que for publicada no GitHub.
-- **Status de evidência:** arquivos de código e configuração criados; **execução local dos testes/JAR/Docker/Actuator pendente** enquanto não houver Maven e Docker disponíveis. Não confunda códigos escritos com testes aprovados.
+- **CI aprovado em 22/11/2026:** 12 testes (8 Service + 4 Controller), Maven BUILD SUCCESS, JAR executado fora da IDE, PostgreSQL, Docker Compose, health UP e tarefa persistida entre execuções. Veja [`evidencias/RESULTADOS_CI.md`](evidencias/RESULTADOS_CI.md).
+- **Execução local na máquina do aluno:** ainda pendente; a CI não substitui a prática individual.
 - Capturas reais devem mostrar comando e resultado, possuir legenda e não expor senhas. Não são fornecidos screenshots inventados.
 
 ## 10. Referências
