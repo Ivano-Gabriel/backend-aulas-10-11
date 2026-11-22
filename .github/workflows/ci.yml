@@ -1,0 +1,99 @@
+name: Testes, JAR, PostgreSQL, Docker e Actuator
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  homologacao:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+
+      - name: Preparar Java 21 e Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Testes automatizados e JAR executável
+        run: |
+          set -o pipefail
+          mvn --batch-mode --no-transfer-progress clean package | tee evidencias/maven-ci.txt
+          test -s target/backend-aulas-10-11-1.0.0.jar
+
+      - name: Configurar credencial temporária de CI
+        run: |
+          echo "DB_USER=ci_aluno" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+
+      - name: Executar PostgreSQL para JAR fora da IDE
+        run: |
+          docker compose up -d db
+          for tentativa in $(seq 1 30); do
+            if docker compose exec -T db pg_isready -U "$DB_USER" -d tarefas_db; then break; fi
+            sleep 2
+          done
+          docker compose ps | tee evidencias/containers-banco-ci.txt
+
+      - name: Executar JAR e verificar CRUD e health
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/tarefas_db
+        run: |
+          set -euo pipefail
+          java -jar target/backend-aulas-10-11-1.0.0.jar > evidencias/log-jar-ci.txt 2>&1 &
+          JAVA_PID=$!
+          trap 'kill "$JAVA_PID" 2>/dev/null || true' EXIT
+          OK=0
+          for tentativa in $(seq 1 45); do
+            if curl -fsS http://localhost:8080/actuator/health > evidencias/health-jar-ci.json; then OK=1; break; fi
+            sleep 2
+          done
+          test "$OK" = 1
+          grep -q '"UP"' evidencias/health-jar-ci.json
+          curl --fail-with-body -sS -X POST http://localhost:8080/api/tarefas \
+            -H 'Content-Type: application/json' \
+            -d '{"titulo":"Persistência CI","descricao":"Criado fora da IDE","prioridade":"ALTA"}' \
+            > evidencias/tarefa-criada-ci.json
+          grep -q 'Persistência CI' evidencias/tarefa-criada-ci.json
+          curl --fail-with-body -sS http://localhost:8080/api/tarefas/1 > evidencias/tarefa-buscada-ci.json
+          grep -q 'Persistência CI' evidencias/tarefa-buscada-ci.json
+          kill "$JAVA_PID" 2>/dev/null || true
+          wait "$JAVA_PID" 2>/dev/null || true
+          trap - EXIT
+
+      - name: Subir API pelo Docker Compose e verificar persistência
+        run: |
+          set -euo pipefail
+          docker compose up --build -d api
+          OK=0
+          for tentativa in $(seq 1 45); do
+            if curl -fsS http://localhost:8080/actuator/health > evidencias/health-compose-ci.json; then OK=1; break; fi
+            sleep 2
+          done
+          test "$OK" = 1
+          grep -q '"UP"' evidencias/health-compose-ci.json
+          curl --fail-with-body -sS http://localhost:8080/api/tarefas/1 > evidencias/tarefa-persistida-ci.json
+          grep -q 'Persistência CI' evidencias/tarefa-persistida-ci.json
+          docker compose ps | tee evidencias/containers-compose-ci.txt
+          docker compose logs --no-color --tail=70 api > evidencias/log-api-ci.txt
+
+      - name: Guardar evidências executadas no CI
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-reais-ci
+          path: |
+            evidencias/*-ci.*
+            evidencias/containers-*-ci.txt
+            target/surefire-reports/*.txt
+          if-no-files-found: warn
+
+      - name: Desligar serviços
+        if: always()
+        run: docker compose down || true
